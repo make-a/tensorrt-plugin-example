@@ -18,13 +18,13 @@ add_executable(${PROJECT_NAME})
 target_sources(
     ${PROJECT_NAME}
     PUBLIC
-    source/cuda_utils.cuh
-    source/cuda_impl.h
-    source/FpsamplePlugin.h
+    source/plugin/cuda_utils.cuh
+    source/plugin/cuda_impl.h
+    source/plugin/FpsamplePlugin.h
 
     PRIVATE
-    source/fpsample_gpu.cu
-    source/FpsamplePlugin.cpp
+    source/plugin/fpsample_gpu.cu
+    source/plugin/FpsamplePlugin.cpp
     source/main.cpp
 )
 

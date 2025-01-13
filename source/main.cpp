@@ -6,7 +6,7 @@
 #include <memory>
 #include <random>
 
-#include "FpsamplePlugin.h"
+#include "./plugin/FpsamplePlugin.h"
 
 using namespace nvinfer1;
 
@@ -21,12 +21,6 @@ class Logger : public ILogger {
 // 在Logger类之后，main函数之前添加
 const char* layerTypeToString( nvinfer1::LayerType type ) {
     switch ( type ) {
-    case LayerType::kCONVOLUTION:
-        return "CONVOLUTION";
-    case LayerType::kACTIVATION:
-        return "ACTIVATION";
-    case LayerType::kPOOLING:
-        return "POOLING";
     case LayerType::kPLUGIN:
         return "PLUGIN";
     case LayerType::kPLUGIN_V2:
