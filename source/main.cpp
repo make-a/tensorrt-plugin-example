@@ -53,8 +53,33 @@ void generateRandomPointCloud( float* data, int batch_size, int num_points, int 
     }
 }
 
-void CreateFpsampleLayer ( INetworkDefinition * network, int batchSize, int numPoints, int channels, int numSamples ) {
+IPluginV3Layer* CreateFpsampleLayer( std::unique_ptr<INetworkDefinition>& network, const char* pluginName, int numSamples,
+                                     ITensor* input ) {
 
+    // 创建插件层
+    PluginField nsampleField( "nsample", &numSamples, PluginFieldType::kINT32, 1 );
+
+    PluginFieldCollection fc;
+    fc.nbFields = 1;
+    fc.fields   = &nsampleField;
+
+    // 获取插件创建器
+    FpsamplePluginCreator* creator =
+        static_cast<FpsamplePluginCreator*>( getPluginRegistry()->getCreator( "KDTreeFpsample", "1" ) );
+    if ( !creator ) {
+        std::cerr << "Failed to get plugin creator" << std::endl;
+        return nullptr;
+    }
+
+    // 创建插件
+    auto plugin = creator->createPlugin( pluginName, &fc, TensorRTPhase::kBUILD );
+    if ( !plugin ) {
+        std::cerr << "Failed to create plugin" << std::endl;
+        return nullptr;
+    }
+    // 添加插件层
+    ITensor* inputTensors[] = { input };
+    return network->addPluginV3( inputTensors, 1, nullptr, 0, *plugin );
 }
 
 int main() {
@@ -84,27 +109,20 @@ int main() {
     getPluginRegistry()->registerCreator( *creator, "" );
 
     // 设置输入维度
-    const int batchSize  = 1;
-    const int numPoints  = 1024;
-    const int channels   = 3;
+    const int batchSize = 8;
+    const int numPoints = 1024;
+    const int channels  = 3;
+
     const int numSamples = 512;
 
     // 创建输入tensor
     ITensor* input = network->addInput( "input", DataType::kFLOAT, Dims3( batchSize, numPoints, channels ) );
 
     // 创建插件层
-    PluginField nsampleField( "nsample", &numSamples, PluginFieldType::kINT32, 1 );
-
-    PluginFieldCollection fc;
-    fc.nbFields = 1;
-    fc.fields   = &nsampleField;
-
-    auto     plugin         = creator->createPlugin( "fpsample", &fc, TensorRTPhase::kBUILD );
-    ITensor* inputTensors[] = { input };
-    auto     layer          = network->addPluginV3( inputTensors, 1, nullptr, 0, *plugin );
+    auto fpsample_layer_1 = CreateFpsampleLayer( network, "fpsample-1", numSamples, input );
 
     // 标记输出
-    network->markOutput( *layer->getOutput( 0 ) );
+    network->markOutput( *fpsample_layer_1->getOutput( 0 ) );
 
     // 打印网络结构
     std::cout << "\n\n\n=== Network Structure ===" << std::endl;
@@ -187,13 +205,13 @@ int main() {
     cudaFree( deviceOutput );
     delete context;
     delete engine;
-    delete plugin;
+    // delete plugin;
     delete creator;
 
     // 在创建插件后添加
     // std::cout << "Plugin type name: " << plugin-> << std::endl;      // 会输出
     // "KDTreeFpsample"
-    std::cout << "Plugin instance name: " << layer->getName() << std::endl;  // 会输出 "fpsample"
+    // std::cout << "Plugin instance name: " << layer->getName() << std::endl;  // 会输出 "fpsample"
 
     return 0;
 }

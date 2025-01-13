@@ -20,7 +20,7 @@ nvinfer1::FpsamplePlugin::FpsamplePlugin( int32_t nsample )
     PluginField pf_nsample = { "nsample", &m_nsample, PluginFieldType::kINT32, 1 };
     m_pluginAttributes.emplace_back( pf_nsample );
 
-    m_pfc.nbFields = m_pluginAttributes.size();
+    m_pfc.nbFields = static_cast<int32_t>( m_pluginAttributes.size() );
     m_pfc.fields   = m_pluginAttributes.data();
 };
 
@@ -57,8 +57,8 @@ AsciiChar const* FpsamplePlugin::getPluginNamespace() const noexcept {
     return FPSAMPLE_PLUGIN_NAMESPACE;
 }
 
-int32_t FpsamplePlugin::configurePlugin( DynamicPluginTensorDesc const* in, int32_t nbInputs,
-                                         DynamicPluginTensorDesc const* out, int32_t nbOutputs ) noexcept {
+int32_t FpsamplePlugin::configurePlugin( DynamicPluginTensorDesc const* in, int32_t nbInputs, DynamicPluginTensorDesc const* out,
+                                         int32_t nbOutputs ) noexcept {
     return 0;
 }
 
@@ -96,10 +96,9 @@ int32_t FpsamplePlugin::getOutputShapes( const DimsExprs* inputs, int32_t nbInpu
 }
 
 size_t nvinfer1::FpsamplePlugin::getWorkspaceSize( DynamicPluginTensorDesc const* inputs, int32_t nbInputs,
-                                                   DynamicPluginTensorDesc const* outputs,
-                                                   int32_t                        nbOutputs ) const noexcept {
-    const int32_t B = inputs[ 0 ].desc.dims.d[ 0 ];
-    const int32_t N = inputs[ 0 ].desc.dims.d[ 1 ];
+                                                   DynamicPluginTensorDesc const* outputs, int32_t nbOutputs ) const noexcept {
+    const int64_t B = inputs[ 0 ].desc.dims.d[ 0 ];
+    const int64_t N = inputs[ 0 ].desc.dims.d[ 1 ];
 
     return B * N * sizeof( float );
 }
@@ -132,19 +131,17 @@ int32_t FpsamplePlugin::onShapeChange( PluginTensorDesc const* in, int32_t nbInp
     return 0;
 }
 
-int32_t FpsamplePlugin::enqueue( PluginTensorDesc const* inputDesc, PluginTensorDesc const* outputDesc,
-                                 void const* const* inputs, void* const* outputs, void* workspace,
-                                 cudaStream_t stream ) noexcept {
+int32_t FpsamplePlugin::enqueue( PluginTensorDesc const* inputDesc, PluginTensorDesc const* outputDesc, void const* const* inputs,
+                                 void* const* outputs, void* workspace, cudaStream_t stream ) noexcept {
 
     const float* xyz  = static_cast<const float*>( inputs[ 0 ] );
     int64_t*     idxs = static_cast<int64_t*>( outputs[ 0 ] );
 
     // 从PluginTensorDesc中提取维度信息
-    int B = inputDesc[ 0 ].dims.d[ 0 ];
-    int N = inputDesc[ 0 ].dims.d[ 1 ];
-    int C = inputDesc[ 0 ].dims.d[ 2 ];
-
-    int S = outputDesc[ 0 ].dims.d[ 1 ];
+    int B = static_cast<int>( inputDesc[ 0 ].dims.d[ 0 ] );
+    int N = static_cast<int>( inputDesc[ 0 ].dims.d[ 1 ] );
+    int C = static_cast<int>( inputDesc[ 0 ].dims.d[ 2 ] );
+    int S = static_cast<int>( outputDesc[ 0 ].dims.d[ 1 ] );
 
     // 计算所需的内存大小N
     size_t temp_size      = B * N;
@@ -189,7 +186,7 @@ FpsamplePluginCreator::FpsamplePluginCreator() {
     PluginField pf_nsample = { "nsample", nullptr, PluginFieldType::kINT32, 1 };
     m_pluginAttributes.emplace_back( pf_nsample );
 
-    m_pfc.nbFields = m_pluginAttributes.size();
+    m_pfc.nbFields = static_cast<int32_t>( m_pluginAttributes.size() );
     m_pfc.fields   = m_pluginAttributes.data();
 }
 

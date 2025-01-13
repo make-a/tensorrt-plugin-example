@@ -67,6 +67,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         "${TRT_ROOT_DIR}/lib/nvinfer_plugin_10.dll"
         "${TRT_ROOT_DIR}/lib/nvinfer_vc_plugin_10.dll"
         "${TRT_ROOT_DIR}/lib/nvonnxparser_10.dll"
+        "${TRT_ROOT_DIR}/lib/nvinfer_builder_resource_10.dll"
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )
 
